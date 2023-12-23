@@ -41,21 +41,34 @@ export const userRegistrationService = async (userDetails: User) => {
   });
 };
 
-export const userLoginService = (loginData: LoginData) => {
+
+export const userLoginService = async (loginData: User) => {
   return new Promise(async (resolve, reject) => {
     try {
       const foundUser = await userModel.find({ email: loginData.email });
-      const userPassword = loginData.password;
-      // const comparedResult = compare(userPassword, result);
-      if (!foundUser) {
-        reject("Authentication failed. User not found");
+
+      if (!foundUser || !foundUser[0] || !foundUser[0].passwordHash) {
+        reject("Authentication failed. User not found or password hash is missing");
+        return;
       }
 
-      bcrypt.compare(userPassword, loginData.password, (err, result) => {
-        if (err || !result) {
-          reject("Authentication failed. Incorrect Password");
+      const userPassword = loginData.password;
+      const hashedPassword = foundUser[0].passwordHash;
+
+      bcrypt.compare(
+        userPassword,
+        hashedPassword as string,   
+        (err, result) => {
+          console.log(result, "qwertyu");  
+          if (err || !result) {
+            reject("Authentication failed. Incorrect Password");
+          } else {
+            resolve("Authentication successful");
+          }
         }
-      });
-    } catch (error: any) {}
+      );
+    } catch (error: any) {
+      reject("Error during authentication");
+    }
   });
 };
